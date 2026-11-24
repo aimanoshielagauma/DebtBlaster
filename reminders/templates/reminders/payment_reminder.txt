@@ -1,0 +1,23 @@
+Hello {{ client_name }},
+
+This is a friendly reminder regarding the outstanding balance on the following invoice.
+
+Invoice: {{ invoice_number|default:"Not provided" }}
+Description: {{ debt.description }}
+Original amount: {{ currency }} {{ original_amount }}
+Confirmed payments: {{ currency }} {{ total_paid }}
+Outstanding balance: {{ currency }} {{ outstanding_balance }}
+Due date: {{ due_date }}
+
+{% if is_overdue %}
+Our records show that this invoice is overdue. If you have already made payment, please disregard this reminder or contact us so we can update our records.
+{% elif is_due_today %}
+This invoice is due today. Please arrange payment by the due date.
+{% else %}
+This invoice is approaching its due date. Please arrange payment when convenient.
+{% endif %}
+
+If you have questions about this invoice, please contact {{ business_name }}{% if contact_email %} at {{ contact_email }}{% endif %}.
+
+Thank you,
+{{ business_name }}
