@@ -54,7 +54,9 @@ class DebtForm(forms.ModelForm):
         amount = self.cleaned_data["original_amount"]
 
         if amount <= Decimal("0.00"):
-            raise ValidationError("The debt amount must be greater than zero.")
+            raise ValidationError(
+                "The debt amount must be greater than zero."
+            )
 
         if self.instance.pk and amount < self.instance.total_paid:
             raise ValidationError(
@@ -65,4 +67,18 @@ class DebtForm(forms.ModelForm):
         return amount
 
     def clean_currency(self):
-        return self.cleaned_data["currency"].strip().upper()
+        currency = self.cleaned_data["currency"].strip().upper()
+
+        if self.instance.pk:
+            old_currency = self.instance.currency.upper()
+
+            if (
+                currency != old_currency
+                and self.instance.payments.exists()
+            ):
+                raise ValidationError(
+                    "You cannot change the currency after payments have "
+                    "been recorded. Create a separate debt in the new currency."
+                )
+
+        return currency

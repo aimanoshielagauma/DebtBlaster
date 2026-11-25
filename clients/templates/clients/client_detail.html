@@ -1,4 +1,116 @@
-{% extends "base.html" %}{% block title %}{{ client.full_name }} | DebtBlaster{% endblock %}{% block content %}
-<div class="page-head"><div><div class="eyebrow">Client profile</div><h1>{{ client.full_name }}</h1><p class="subhead">{{ client.get_client_type_display }} · {% if client.is_archived %}Archived{% else %}Active client{% endif %}</p></div><div class="actions"><a class="btn secondary" href="{% url 'client-edit' client.pk %}">Edit client</a><a class="btn" href="{% url 'debt-create' %}?client={{ client.pk }}">＋ Add debt</a></div></div>
-<div class="detail-grid"><section class="panel"><h2 class="panel-title">Contact details</h2><div class="info-grid"><div class="info-item"><small>Email</small><strong>{{ client.email }}</strong></div><div class="info-item"><small>Phone</small><strong>{{ client.phone|default:'—' }}</strong></div></div>{% if client.notes %}<p class="muted">{{ client.notes|linebreaksbr }}</p>{% endif %}<form class="inline-form" method="post" action="{% url 'client-toggle-archive' client.pk %}">{% csrf_token %}<button class="btn secondary small" type="submit">{% if client.is_archived %}Restore client{% else %}Archive client{% endif %}</button></form></section><section class="panel"><h2 class="panel-title">Outstanding balance</h2><div class="balance">{{ total_outstanding|floatformat:2 }}</div><p class="muted">Original debt total: {{ total_original|floatformat:2 }}</p><a href="{% url 'payment-create' %}" class="btn secondary small">Record a payment</a></section></div>
-<section class="panel"><h2 class="panel-title">Debts & payment status</h2>{% if debts %}<table><thead><tr><th>Description</th><th>Due date</th><th>Owed</th><th>Paid</th><th>Outstanding</th><th>Status</th><th></th></tr></thead><tbody>{% for debt in debts %}<tr><td class="primary-cell">{{ debt.description }}</td><td>{{ debt.due_date|date:'M j, Y' }}</td><td>{{ debt.currency }} {{ debt.original_amount|floatformat:2 }}</td><td>{{ debt.currency }} {{ debt.total_paid|floatformat:2 }}</td><td class="primary-cell">{{ debt.currency }} {{ debt.outstanding_balance|floatformat:2 }}</td><td><span class="pill {{ debt.status }}">{{ debt.get_status_display }}</span></td><td><a href="{% url 'debt-detail' debt.pk %}">Details →</a></td></tr>{% endfor %}</tbody></table>{% else %}<div class="empty">No debts have been added for this client yet.</div>{% endif %}</section>{% endblock %}
+
+{% extends "base.html" %}
+
+{% block title %}{{ client.full_name }} | DebtBlaster{% endblock %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <div class="eyebrow">Client profile</div>
+        <h1>{{ client.full_name }}</h1>
+        <p class="subhead">
+            {{ client.get_client_type_display }} ·
+            {% if client.is_archived %}Archived{% else %}Active client{% endif %}
+        </p>
+    </div>
+    <div class="actions">
+        <a class="btn secondary" href="{% url 'client-edit' client.pk %}">Edit client</a>
+        <a class="btn" href="{% url 'debt-create' %}?client={{ client.pk }}">＋ Add debt</a>
+    </div>
+</div>
+
+<div class="detail-grid">
+    <section class="panel">
+        <h2 class="panel-title">Contact details</h2>
+
+        <div class="info-grid">
+            <div class="info-item">
+                <small>Email</small>
+                <strong>{{ client.email }}</strong>
+            </div>
+            <div class="info-item">
+                <small>Phone</small>
+                <strong>{{ client.phone|default:'—' }}</strong>
+            </div>
+        </div>
+
+        {% if client.notes %}
+            <p class="muted">{{ client.notes|linebreaksbr }}</p>
+        {% endif %}
+
+        <form class="inline-form" method="post" action="{% url 'client-toggle-archive' client.pk %}">
+            {% csrf_token %}
+            <button class="btn secondary small" type="submit">
+                {% if client.is_archived %}Restore client{% else %}Archive client{% endif %}
+            </button>
+        </form>
+    </section>
+
+    <section class="panel">
+        <h2 class="panel-title">Outstanding balance</h2>
+
+        {% for currency, total in outstanding_by_currency.items %}
+            <div class="balance">
+                {{ currency }} {{ total|floatformat:2 }}
+            </div>
+        {% empty %}
+            <div class="balance">0.00</div>
+        {% endfor %}
+
+        <p class="muted">Original debt total:</p>
+
+        {% for currency, total in original_by_currency.items %}
+            <p>{{ currency }} {{ total|floatformat:2 }}</p>
+        {% empty %}
+            <p class="muted">No outstanding debt records.</p>
+        {% endfor %}
+
+        <a href="{% url 'payment-create' %}" class="btn secondary small">
+            Record a payment
+        </a>
+    </section>
+</div>
+
+<section class="panel">
+    <h2 class="panel-title">Debts & payment status</h2>
+
+    {% if debts %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Due date</th>
+                    <th>Owed</th>
+                    <th>Paid</th>
+                    <th>Outstanding</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for debt in debts %}
+                    <tr>
+                        <td class="primary-cell">{{ debt.description }}</td>
+                        <td>{{ debt.due_date|date:'M j, Y' }}</td>
+                        <td>{{ debt.currency }} {{ debt.original_amount|floatformat:2 }}</td>
+                        <td>{{ debt.currency }} {{ debt.total_paid|floatformat:2 }}</td>
+                        <td class="primary-cell">
+                            {{ debt.currency }} {{ debt.outstanding_balance|floatformat:2 }}
+                        </td>
+                        <td>
+                            <span class="pill {{ debt.status }}">
+                                {{ debt.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{% url 'debt-detail' debt.pk %}">Details →</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="empty">No debts have been added for this client yet.</div>
+    {% endif %}
+</section>
+{% endblock %}

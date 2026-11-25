@@ -1,0 +1,85 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1>Monthly Collections Report</h1>
+    <p>Review confirmed payments received during a selected month.</p>
+
+    <form method="get" class="mb-4">
+        <label for="month">Select month:</label>
+        <input
+            type="month"
+            id="month"
+            name="month"
+            value="{{ month_value }}"
+            required
+        >
+        <button type="submit">View Report</button>
+    </form>
+
+    <h2>Collections for {{ selected_month|date:"F Y" }}</h2>
+
+    {% if currency_totals %}
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Currency</th>
+                        <th>Total Collected</th>
+                        <th>Confirmed Payments</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in currency_totals %}
+                        <tr>
+                            <td>{{ item.debt__currency }}</td>
+                            <td>
+                                {{ item.total|floatformat:2 }}
+                                {{ item.debt__currency }}
+                            </td>
+                            <td>{{ item.payment_count }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p>No confirmed payments were recorded for this month.</p>
+    {% endif %}
+
+    <h2>Payment Details</h2>
+
+    {% if payments %}
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Client</th>
+                        <th>Debt / Invoice</th>
+                        <th>Amount</th>
+                        <th>Method</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payment in payments %}
+                        <tr>
+                            <td>{{ payment.payment_date|date:"d M Y" }}</td>
+                            <td>{{ payment.debt.client.full_name }}</td>
+                            <td>{{ payment.debt.description }}</td>
+                            <td>
+                                {{ payment.amount|floatformat:2 }}
+                                {{ payment.debt.currency }}
+                            </td>
+                            <td>{{ payment.get_method_display }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p>No payment details to display.</p>
+    {% endif %}
+</div>
+{% endblock %}

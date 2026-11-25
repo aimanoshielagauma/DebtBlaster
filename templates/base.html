@@ -2,26 +2,84 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}DebtBlaster{% endblock %}</title>
-  <link rel="stylesheet" href="{% static 'app.css' %}">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}DebtBlaster{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'app.css' %}">
 </head>
 <body>
-<aside class="sidebar">
-  <a class="brand" href="{% url 'client-list' %}"><span class="brand-icon">D</span> DebtBlaster</a>
-  <div class="nav-label">WORKSPACE</div>
-  <a class="nav-link" href="{% url 'client-list' %}"><span>◉</span> Clients</a>
-  <a class="nav-link" href="{% url 'debt-list' %}"><span>▤</span> Debts & invoices</a>
-  <a class="nav-link" href="{% url 'payment-create' %}"><span>↗</span> Record a payment</a>
-  <div class="sidebar-bottom">
-    {% if request.user.is_authenticated %}<div class="user-chip"><span class="avatar">{{ request.user.username|first|upper }}</span><span>{{ request.user.username }}<small>Workspace owner</small></span></div>
-    <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="logout" type="submit">Log out</button></form>{% endif %}
-  </div>
-</aside>
-<main class="main">
-  <header class="topbar"><span>Accounts receivable</span><span class="live-dot">● &nbsp;Your workspace</span></header>
-  {% if messages %}<div class="messages">{% for message in messages %}<div class="message {{ message.tags }}">{{ message }}</div>{% endfor %}</div>{% endif %}
-  {% block content %}{% endblock %}
-  <footer>DebtBlaster <span>Keep every payment on track.</span></footer>
-</main>
-</body></html>
+    <aside class="sidebar">
+        <a class="brand" href="{% url 'client-list' %}">
+            <span class="brand-icon">D</span> DebtBlaster
+        </a>
+
+        <div class="nav-label">WORKSPACE</div>
+
+        <a class="nav-link" href="{% url 'client-list' %}">
+            <span>◉</span> Clients
+        </a>
+
+        <a class="nav-link" href="{% url 'debt-list' %}">
+            <span>▤</span> Debts &amp; invoices
+        </a>
+
+        <a class="nav-link" href="{% url 'debt-aging-report' %}">
+            <span>▤</span> Debt Aging Report
+        </a>
+
+        <a class="nav-link" href="{% url 'payment-create' %}">
+            <span>↗</span> Record a payment
+        </a>
+
+        <a class="nav-link" href="{% url 'monthly-collections' %}">
+            <span>▤</span> Monthly Collections
+        </a>
+
+        <a class="nav-link" href="{% url 'client-payment-behaviour' %}">
+            <span>◷</span> Client Payment Behaviour
+        </a>
+
+        <a class="nav-link" href="{% url 'reminder-history' %}">
+            <span>↻</span> Reminder History
+        </a>
+
+        <div class="sidebar-bottom">
+            {% if request.user.is_authenticated %}
+                <div class="user-chip">
+                    <span class="avatar">{{ request.user.username|first|upper }}</span>
+                    <span>
+                        {{ request.user.username }}
+                        <small>Workspace owner</small>
+                    </span>
+                </div>
+
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button class="logout" type="submit">Log out</button>
+                </form>
+            {% endif %}
+        </div>
+    </aside>
+
+    <main class="main">
+        <header class="topbar">
+            <span>Accounts receivable</span>
+            <span class="live-dot">● &nbsp;Your workspace</span>
+        </header>
+
+        {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                    <div class="message {{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+
+        <footer>
+            DebtBlaster <span>Keep every payment on track.</span>
+        </footer>
+    </main>
+</body>
+</html>

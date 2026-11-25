@@ -3,9 +3,8 @@ from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q, Sum
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
-from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from debts.models import Debt
@@ -15,58 +14,32 @@ from .models import Client
 
 @login_required
 def client_list(request):
-    clients = Client.objects.filter(owner=request.user).prefetch_related("debts__payments")
+    clients = Client.objects.filter(owner=request.user)
 
-    search = request.GET.get("q", "").strip()
-    archived = request.GET.get("archived", "active")
+    search_query = request.GET.get("q", "").strip()
+    archive_filter = request.GET.get("archive", "active")
 
-    if search:
+    if search_query:
         clients = clients.filter(
-            Q(full_name__icontains=search)
-            | Q(email__icontains=search)
-            | Q(phone__icontains=search)
+            Q(full_name__icontains=search_query)
+            | Q(email__icontains=search_query)
+            | Q(phone__icontains=search_query)
         )
 
-    if archived == "archived":
+    if archive_filter == "archived":
         clients = clients.filter(is_archived=True)
-    elif archived == "all":
+    elif archive_filter == "all":
         pass
     else:
         clients = clients.filter(is_archived=False)
 
-    for client in clients:
-        totals = {}
-        due_dates = []
-        for debt in client.debts.all():
-            if debt.owner_id != request.user.pk or debt.status == Debt.Status.CANCELLED:
-                continue
-            paid = sum(
-                (payment.amount for payment in debt.payments.all() if payment.status == "confirmed"),
-                Decimal("0.00"),
-            )
-            balance = max(Decimal("0.00"), debt.original_amount - paid)
-            if balance > Decimal("0.00"):
-                totals[debt.currency] = totals.get(debt.currency, Decimal("0.00")) + balance
-                due_dates.append(debt.due_date)
-        client.outstanding_by_currency = totals
-        client.next_due_date = min(due_dates) if due_dates else None
-
-    all_clients = Client.objects.filter(owner=request.user)
-    all_debts = Debt.objects.filter(owner=request.user).exclude(status=Debt.Status.CANCELLED)
-    outstanding_by_currency = {}
-    for debt in all_debts:
-        outstanding_by_currency[debt.currency] = outstanding_by_currency.get(debt.currency, Decimal("0.00")) + debt.outstanding_balance
     return render(
         request,
         "clients/client_list.html",
         {
             "clients": clients,
-            "search": search,
-            "archived": archived,
-            "active_count": all_clients.filter(is_archived=False).count(),
-            "open_count": all_debts.exclude(status=Debt.Status.PAID).count(),
-            "overdue_count": all_debts.exclude(status=Debt.Status.PAID).filter(due_date__lt=timezone.localdate()).count(),
-            "outstanding_by_currency": outstanding_by_currency,
+            "search_query": search_query,
+            "archive_filter": archive_filter,
         },
     )
 
@@ -89,7 +62,10 @@ def client_create(request):
     return render(
         request,
         "clients/client_form.html",
-        {"form": form, "page_title": "Add client"},
+        {
+            "form": form,
+            "client": None,
+        },
     )
 
 
@@ -104,20 +80,25 @@ def client_detail(request, pk):
     debts = Debt.objects.filter(
         client=client,
         owner=request.user,
-    ).order_by("due_date", "id")
-
-    outstanding_debts = debts.exclude(
+    ).exclude(
         status=Debt.Status.CANCELLED
-    )
+    ).order_by("-created_at")
 
-    total_original = outstanding_debts.aggregate(
-        total=Sum("original_amount")
-    )["total"] or Decimal("0.00")
+    original_by_currency = {}
+    outstanding_by_currency = {}
 
-    total_outstanding = sum(
-        (debt.outstanding_balance for debt in outstanding_debts),
-        Decimal("0.00"),
-    )
+    for debt in debts:
+        currency = debt.currency.upper()
+
+        original_by_currency[currency] = (
+            original_by_currency.get(currency, Decimal("0.00"))
+            + debt.original_amount
+        )
+
+        outstanding_by_currency[currency] = (
+            outstanding_by_currency.get(currency, Decimal("0.00"))
+            + debt.outstanding_balance
+        )
 
     return render(
         request,
@@ -125,8 +106,8 @@ def client_detail(request, pk):
         {
             "client": client,
             "debts": debts,
-            "total_original": total_original,
-            "total_outstanding": total_outstanding,
+            "original_by_currency": original_by_currency,
+            "outstanding_by_currency": outstanding_by_currency,
         },
     )
 
@@ -155,7 +136,6 @@ def client_edit(request, pk):
         {
             "form": form,
             "client": client,
-            "page_title": "Edit client",
         },
     )
 
@@ -172,11 +152,9 @@ def client_toggle_archive(request, pk):
     client.is_archived = not client.is_archived
     client.save(update_fields=["is_archived", "updated_at"])
 
-    message = (
-        "Client archived."
-        if client.is_archived
-        else "Client restored."
-    )
-    messages.success(request, message)
+    if client.is_archived:
+        messages.success(request, "Client archived successfully.")
+    else:
+        messages.success(request, "Client restored successfully.")
 
-    return redirect("client-detail", pk=client.pk)
+    return redirect("client-list")
