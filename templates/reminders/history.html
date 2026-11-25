@@ -1,0 +1,113 @@
+
+{% extends "base.html" %}
+
+{% block title %}Reminder History | DebtBlaster{% endblock %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <div class="eyebrow">COMMUNICATIONS</div>
+        <h1>Reminder History</h1>
+        <p class="subhead">
+            Track scheduled reminders, delivery attempts, and failures.
+        </p>
+    </div>
+</div>
+
+<section class="panel">
+    <form method="get" class="filter-bar">
+        <label for="status">Filter by status</label>
+
+        <select name="status" id="status">
+            <option value="">All statuses</option>
+            {% for value, label in status_choices %}
+                <option value="{{ value }}"
+                    {% if selected_status == value %}selected{% endif %}>
+                    {{ label }}
+                </option>
+            {% endfor %}
+        </select>
+
+        <button type="submit" class="btn">Apply filter</button>
+        {% if selected_status %}
+            <a href="{% url 'reminder-history' %}" class="btn secondary">
+                Clear
+            </a>
+        {% endif %}
+    </form>
+</section>
+
+<section class="panel">
+    <h2 class="panel-title">Reminder activity</h2>
+
+    {% if events %}
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Client / Debt</th>
+                        <th>Recipient</th>
+                        <th>Reminder type</th>
+                        <th>Scheduled</th>
+                        <th>Status</th>
+                        <th>Attempts</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for event in events %}
+                    <tr>
+                        <td>
+                            <strong>{{ event.debt.client.full_name }}</strong>
+                            <div class="muted">{{ event.debt.description }}</div>
+                        </td>
+                        <td>{{ event.recipient_email }}</td>
+                        <td>{{ event.get_event_type_display }}</td>
+                        <td>
+                            {{ event.scheduled_for|date:"d M Y" }}
+                            <div class="muted">
+                                {{ event.scheduled_for|time:"H:i" }}
+                            </div>
+                        </td>
+                        <td>
+                            <span class="status-badge status-{{ event.status }}">
+                                {{ event.get_status_display }}
+                            </span>
+                        </td>
+                        <td>{{ event.attempt_count }}</td>
+                        <td>
+                            {% if event.sent_at %}
+                                <div>Sent {{ event.sent_at|date:"d M Y, H:i" }}</div>
+                            {% endif %}
+
+                            {% if event.last_error %}
+                                <details>
+                                    <summary>View error</summary>
+                                    <p class="muted">{{ event.last_error }}</p>
+                                </details>
+                            {% elif not event.sent_at and event.status == "pending" %}
+                                <span class="muted">Awaiting processing</span>
+                            {% elif not event.sent_at and event.status == "processing" %}
+                                <span class="muted">Being processed</span>
+                            {% elif not event.sent_at %}
+                                <span class="muted">No additional details</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <h3>No reminder events found</h3>
+            <p class="muted">
+                Reminder activity will appear here when events have been queued.
+                {% if selected_status %}
+                    Try selecting a different status or clearing the filter.
+                {% endif %}
+            </p>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

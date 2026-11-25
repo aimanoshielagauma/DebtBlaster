@@ -1,11 +1,13 @@
-
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.urls import include, path
 from django.views.generic import RedirectView
 
-from payments.views import create_payment
-
+from payments.views import (
+    create_payment,
+    monthly_collections,
+    client_payment_behaviour,
+)
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -22,11 +24,22 @@ urlpatterns = [
         auth_views.LogoutView.as_view(),
         name="logout",
     ),
+    path(
+        "payments/client-behaviour/",
+        client_payment_behaviour,
+        name="client-payment-behaviour",
+    ),
 
     # Existing application pages
     path("clients/", include("clients.urls")),
     path("debts/", include("debts.urls")),
+    path("reminders/", include("reminders.urls")),
     path("payments/create/", create_payment, name="payment-create"),
+    path(
+        "payments/monthly-collections/",
+        monthly_collections,
+        name="monthly-collections",
+    ),
 
     # API endpoints
     path("api/clients/", include("clients.api_urls")),

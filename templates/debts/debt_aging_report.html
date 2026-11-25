@@ -1,0 +1,118 @@
+
+{% extends "base.html" %}
+
+{% block title %}Debt Aging Report | DebtBlaster{% endblock %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <div class="eyebrow">REPORTS</div>
+        <h1>Debt Aging Report</h1>
+        <p class="subhead">
+            Outstanding balances grouped by how long they have been overdue.
+        </p>
+        <p class="muted">Report date: {{ today|date:"d M Y" }}</p>
+    </div>
+</div>
+
+{% if currency_reports %}
+    {% for currency_report in currency_reports %}
+    <section class="panel">
+        <h2 class="panel-title">
+            {{ currency_report.currency }} Outstanding Balances
+        </h2>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Aging category</th>
+                        <th>Number of debts</th>
+                        <th>Outstanding balance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for bucket in currency_report.buckets %}
+                    <tr>
+                        <td>{{ bucket.label }}</td>
+                        <td>{{ bucket.count }}</td>
+                        <td>
+                            {{ currency_report.currency }}
+                            {{ bucket.amount|floatformat:2 }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    <tr>
+                        <th>Total outstanding</th>
+                        <th></th>
+                        <th>
+                            {{ currency_report.currency }}
+                            {{ currency_report.total|floatformat:2 }}
+                        </th>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+    {% endfor %}
+
+    <section class="panel">
+        <h2 class="panel-title">Debt Details</h2>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Client</th>
+                        <th>Debt / Invoice</th>
+                        <th>Due date</th>
+                        <th>Days overdue</th>
+                        <th>Currency</th>
+                        <th>Outstanding</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in debt_rows %}
+                    <tr>
+                        <td>{{ row.debt.client.full_name }}</td>
+                        <td>
+                            <a href="{% url 'debt-detail' row.debt.pk %}">
+                                {{ row.debt.description }}
+                            </a>
+                            {% if row.debt.invoice_number %}
+                                <div class="muted">
+                                    {{ row.debt.invoice_number }}
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td>{{ row.debt.due_date|date:"d M Y" }}</td>
+                        <td>
+                            {% if row.days_overdue == 0 %}
+                                Not overdue
+                            {% else %}
+                                {{ row.days_overdue }} days
+                            {% endif %}
+                        </td>
+                        <td>{{ row.debt.currency }}</td>
+                        <td>
+                            {{ row.debt.currency }}
+                            {{ row.balance|floatformat:2 }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+{% else %}
+    <section class="panel empty-state">
+        <h2>No outstanding debts</h2>
+        <p class="muted">
+            There are no unpaid balances to include in this report.
+        </p>
+        <a href="{% url 'debt-list' %}" class="btn">
+            View debts
+        </a>
+    </section>
+{% endif %}
+{% endblock %}

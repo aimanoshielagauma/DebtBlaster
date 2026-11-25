@@ -1,0 +1,58 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1>Client Payment Behaviour</h1>
+
+    <p>
+        Review confirmed payments, outstanding balances, and payment timing
+        for your clients.
+    </p>
+
+    <p><strong>Clients in your account:</strong> {{ client_count }}</p>
+
+    {% if report_rows %}
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Client</th>
+                        <th>Currency</th>
+                        <th>Original Debt</th>
+                        <th>Total Paid</th>
+                        <th>Outstanding</th>
+                        <th>Unpaid</th>
+                        <th>Partial</th>
+                        <th>Settled</th>
+                        <th>Payments On/Before Due Date</th>
+                        <th>Payments After Due Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in report_rows %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'client-detail' row.client.pk %}">
+                                    {{ row.client.full_name }}
+                                </a>
+                            </td>
+                            <td>{{ row.currency }}</td>
+                            <td>{{ row.total_original|floatformat:2 }}</td>
+                            <td>{{ row.total_paid|floatformat:2 }}</td>
+                            <td>{{ row.total_outstanding|floatformat:2 }}</td>
+                            <td>{{ row.unpaid_debts }}</td>
+                            <td>{{ row.partial_debts }}</td>
+                            <td>{{ row.paid_debts }}</td>
+                            <td>{{ row.payments_on_or_before_due }}</td>
+                            <td>{{ row.payments_after_due }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p>No active debts are available for your clients yet.</p>
+    {% endif %}
+</div>
+{% endblock %}
